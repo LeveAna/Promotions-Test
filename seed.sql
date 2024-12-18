@@ -1,3 +1,7 @@
+CREATE DATABASE IF NOT EXISTS promotions_db;
+
+USE promotions_db;
+
 CREATE TABLE IF NOT EXISTS products (
     sku VARCHAR(20) PRIMARY KEY,
     name VARCHAR(255),

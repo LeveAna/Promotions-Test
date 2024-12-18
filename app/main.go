@@ -25,12 +25,6 @@ func main() {
 	}
 	defer db.Close()
 
-	// Verify database connection
-	if err := db.Ping(); err != nil {
-		log.Fatal("Database unreachable:", err)
-	}
-	log.Println("Connected to MySQL database")
-
 	// Handle products endpoint
 	http.HandleFunc("/products", func(w http.ResponseWriter, r *http.Request) {
 		rows, err := db.Query("SELECT sku, name, category, price FROM products LIMIT 5")
@@ -50,11 +44,12 @@ func main() {
 			products = append(products, p)
 		}
 
+		log.Println("Products fetched successfully")
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(products)
 	})
 
 	// Start server
-	log.Println("Server running on port 8080")
+	log.Println("Server is running on port 8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
