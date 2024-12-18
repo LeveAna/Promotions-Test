@@ -9,6 +9,9 @@ CREATE TABLE IF NOT EXISTS products (
     price INT
 );
 
+-- Composite index for category and price filtering (common query pattern)
+CREATE INDEX idx_category_price ON products (category, price);
+
 INSERT INTO products (sku, name, category, price) VALUES
 ('000001', 'BV Lean leather ankle boots', 'boots', 89000),
 ('000002', 'BV Lean leather ankle boots', 'boots', 99000),
