@@ -18,22 +18,19 @@ RUN go mod download
 COPY . .
 
 # Build the Go application
-RUN go build -o promotions-test .
+RUN go build -o main .
 
-# Stage 2: Run Stage
-FROM alpine:3.18
-
-# Install MySQL client for testing connectivity (optional)
-RUN apk --no-cache add mysql-client
+# Second stage: minimal image for the final app
+FROM alpine:latest
 
 # Set the working directory
 WORKDIR /root/
 
 # Copy the compiled binary from the build stage
-COPY --from=builder /app/promotions-test .
+COPY --from=builder /app/main .
 
 # Expose the application's port
 EXPOSE 8080
 
 # Command to run the application
-CMD ["./promotions-test"]
+CMD ["./main"]
