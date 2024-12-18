@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 
@@ -13,7 +14,14 @@ type Product struct {
 	SKU      string `json:"sku"`
 	Name     string `json:"name"`
 	Category string `json:"category"`
-	Price    int    `json:"price"`
+	Price    Price  `json:"price"`
+}
+
+type Price struct {
+	Original           int     `json:"original"`
+	Final              int     `json:"final"`
+	DiscountPercentage *string `json:"discount_percentage,omitempty"`
+	Currency           string  `json:"currency"`
 }
 
 func main() {
@@ -37,7 +45,7 @@ func main() {
 		var products []Product
 		for rows.Next() {
 			var p Product
-			if err := rows.Scan(&p.SKU, &p.Name, &p.Category, &p.Price); err != nil {
+			if err := rows.Scan(&p.SKU, &p.Name, &p.Category, &p.Price.Original); err != nil {
 				http.Error(w, "Error scanning product", http.StatusInternalServerError)
 				return
 			}
