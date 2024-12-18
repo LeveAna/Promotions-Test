@@ -5,13 +5,13 @@ services:
     build:
       context: ./app
       dockerfile: Dockerfile
-    container_name: promotions-test_app
+    container_name: promotions-app
     ports:
       - "8080:8080"
     depends_on:
       - db
     environment:
-      - DATABASE_URL=root:password@tcp(db:3306)/promotions_test
+      - DATABASE_URL=root:password@tcp(db:3306)/promotions_db
     volumes:
       - ./app:/app
 
@@ -25,7 +25,7 @@ services:
       - "3306:3306"
     volumes:
       - db_data:/var/lib/mysql
-      - ./seed.sql:/docker-entrypoint-initdb.d/seed.sql
+      - ./seed.sql:/docker-entrypoint-initdb.d/seed.sql:ro
 
 volumes:
   db_data:

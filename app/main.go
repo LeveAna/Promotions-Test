@@ -31,7 +31,7 @@ type Application struct {
 func setUpApp() (Application, error) {
 	var application Application
 	// Connect to MySQL
-	dsn := "root:password@tcp(db:3306)/mytheresa"
+	dsn := "root:password@tcp(db:3306)/promotions_db"
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		return application, fmt.Errorf("database connection failed: %v", err)
