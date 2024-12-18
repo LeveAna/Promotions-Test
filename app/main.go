@@ -46,7 +46,15 @@ func main() {
 
 		log.Println("Products fetched successfully")
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(products)
+
+		// Marshal the products slice into pretty JSON format
+		formattedJSON, err := json.MarshalIndent(products, "", "    ")
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Error marshalling JSON: %v", err), http.StatusInternalServerError)
+			return
+		}
+
+		w.Write(formattedJSON)
 	})
 
 	// Start server
