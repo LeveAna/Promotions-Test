@@ -3,6 +3,7 @@ package services
 import (
 	"database/sql"
 	"fmt"
+	"strconv"
 )
 
 type Product struct {
@@ -19,10 +20,19 @@ type Price struct {
 	Currency           string  `json:"currency"`
 }
 
+// TODO: move to database for more flexibility
+type Discount struct {
+	Percentage int
+	SKU        *string
+	Category   *string
+}
+
 type Filters struct {
 	Category      string
 	PriceLessThan int
 }
+
+// TODO: add caching
 
 // GetProducts retrieves products from the database with optional filters and simple pagination.
 func GetProducts(db *sql.DB, filters Filters, page, pageSize int) ([]Product, error) {
@@ -68,6 +78,18 @@ func GetProducts(db *sql.DB, filters Filters, page, pageSize int) ([]Product, er
 		if err := rows.Scan(&p.SKU, &p.Name, &p.Category, &p.Price.Original); err != nil {
 			return nil, fmt.Errorf("failed to scan product: %v", err)
 		}
+
+		// Apply discounts
+		discounts := []Discount{
+			// Rule 1: 30% discount for "boots" category
+			{Percentage: 30, Category: strPtr("boots")},
+			// Rule 2: 15% discount for SKU "000003"
+			{Percentage: 15, SKU: strPtr("000003")},
+		}
+
+		applyDiscount(&p, discounts)
+
+		p.Price.Currency = "EUR"
 		products = append(products, p)
 	}
 
@@ -77,4 +99,31 @@ func GetProducts(db *sql.DB, filters Filters, page, pageSize int) ([]Product, er
 	}
 
 	return products, nil
+}
+
+// applyDiscount applies the discount rules to a product
+func applyDiscount(p *Product, discounts []Discount) {
+	if p == nil {
+		return
+	}
+
+	// Default final price is the original price
+	p.Price.Final = p.Price.Original
+
+	var maxDiscount Discount
+	for _, d := range discounts {
+		if (d.Category != nil && *d.Category == p.Category) || (d.SKU != nil && *d.SKU == p.SKU) {
+			if d.Percentage > maxDiscount.Percentage {
+				maxDiscount = d
+			}
+		}
+	}
+
+	if maxDiscount.Percentage > 0 {
+		discountAmount := p.Price.Original * maxDiscount.Percentage / 100
+		p.Price.Final = p.Price.Original - discountAmount
+
+		discountLabel := strconv.Itoa(maxDiscount.Percentage) + "%"
+		p.Price.DiscountPercentage = &discountLabel
+	}
 }
