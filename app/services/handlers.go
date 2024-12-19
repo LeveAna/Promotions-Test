@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
+	"github.com/go-redis/redis"
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -14,6 +16,7 @@ import (
 type Application struct {
 	DB     *sql.DB
 	Server *http.Server
+	Cache  *redis.Client
 }
 
 // SetUpApp initializes the database connection
@@ -39,25 +42,39 @@ func SetUpApp(dsn string) (*Application, error) {
 		Handler: mux,
 	}
 
+	redisHost := os.Getenv("REDIS_HOST")
+	redisPort := os.Getenv("REDIS_PORT")
+	if redisHost == "" {
+		redisHost = "localhost" // Fallback for local testing
+	}
+	if redisPort == "" {
+		redisPort = "6379"
+	}
+
+	// Connect to Redis
+	application.Cache = redis.NewClient(&redis.Options{
+		Addr: redisHost + ":" + redisPort,
+	})
+
 	return &application, nil
 }
 
 // ProductsHandler handles the fetching of products with optional pagination and filters
-func (application *Application) ProductsHandler(w http.ResponseWriter, r *http.Request) {
+func (app *Application) ProductsHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Products Handler starting...")
 	defer log.Printf("Products Handler finished.")
 
 	// Parse query parameters
 	page, pageSize := parsePaginationParams(r)
 
-	// Extract filters from query parameters (optional)
+	// Extract filters from query parameters
 	filters := Filters{
 		Category:      r.URL.Query().Get("category"),
 		PriceLessThan: parseInt(r.URL.Query().Get("priceLessThan")),
 	}
 
 	// Fetch products with the specified filters and pagination
-	products, err := GetProducts(application.DB, filters, page, pageSize)
+	products, err := app.GetProducts(app.DB, filters, page, pageSize)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error getting products: %v", err), http.StatusInternalServerError)
 		return

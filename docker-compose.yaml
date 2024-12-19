@@ -10,8 +10,11 @@ services:
       - "8080:8080"
     depends_on:
       - db
+      - redis
     environment:
       - DATABASE_URL=root:password@tcp(db:3306)/promotions_db
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
     volumes:
       - ./app:/app
 
@@ -26,6 +29,13 @@ services:
     volumes:
       - db_data:/var/lib/mysql
       - ./seed.sql:/docker-entrypoint-initdb.d/seed.sql:ro
+
+  redis:
+    image: redis:latest
+    container_name: promotions-redis
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--save", "60", "1", "--loglevel", "warning"]
 
 volumes:
   db_data:

@@ -14,6 +14,7 @@ require (
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/DATA-DOG/go-sqlmock v1.5.2
+	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/stretchr/testify v1.10.0
 	gotest.tools/v3 v3.5.1
 )

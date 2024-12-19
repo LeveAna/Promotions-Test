@@ -2,8 +2,11 @@ package services
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
+	"log"
 	"strconv"
+	"time"
 )
 
 type Product struct {
@@ -32,10 +35,47 @@ type Filters struct {
 	PriceLessThan int
 }
 
-// TODO: add caching
-
 // GetProducts retrieves products from the database with optional filters and simple pagination.
-func GetProducts(db *sql.DB, filters Filters, page, pageSize int) ([]Product, error) {
+func (app *Application) GetProducts(db *sql.DB, filters Filters, page, pageSize int) ([]Product, error) {
+	cacheKey := buildCacheKey(filters, page, pageSize)
+
+	// Check Redis for cached data
+	if app.Cache != nil {
+		cachedProducts, err := app.Cache.Get(cacheKey).Result()
+		if err != nil {
+			log.Printf("failed to get cache products: %v", err)
+		}
+
+		if err == nil && cachedProducts != "" {
+			// Cache hit: Unmarshal the cached JSON data
+			var products []Product
+			if err := json.Unmarshal([]byte(cachedProducts), &products); err == nil {
+				log.Println("Cache hit")
+				return products, nil
+			}
+		}
+	}
+
+	// Cache miss: Query the database
+	products, err := queryProductsFromDB(app.DB, filters, page, pageSize)
+	if err != nil {
+		return nil, err
+	}
+
+	// Store the products in Redis with an expiration time
+	jsonProducts, err := json.Marshal(products)
+	if err != nil {
+		log.Printf("failed to marshal products: %v", err)
+	}
+
+	if err == nil {
+		app.Cache.Set(cacheKey, jsonProducts, 10*time.Minute)
+	}
+
+	return products, nil
+}
+
+func queryProductsFromDB(db *sql.DB, filters Filters, page, pageSize int) ([]Product, error) {
 	// Validate pagination parameters
 	if page < 1 {
 		page = 1
@@ -45,7 +85,7 @@ func GetProducts(db *sql.DB, filters Filters, page, pageSize int) ([]Product, er
 	}
 
 	// Start building the SQL query
-	query := "SELECT sku, name, category, price FROM products WHERE 1=1"
+	query := "SELECT sku, name, category, price FROM products"
 	args := []interface{}{} // To hold query parameters
 
 	// Apply category filter if it's provided
@@ -79,7 +119,7 @@ func GetProducts(db *sql.DB, filters Filters, page, pageSize int) ([]Product, er
 			return nil, fmt.Errorf("failed to scan product: %v", err)
 		}
 
-		// Apply discounts
+		// Given discounts
 		discounts := []Discount{
 			// Rule 1: 30% discount for "boots" category
 			{Percentage: 30, Category: strPtr("boots")},
@@ -99,6 +139,11 @@ func GetProducts(db *sql.DB, filters Filters, page, pageSize int) ([]Product, er
 	}
 
 	return products, nil
+}
+
+func buildCacheKey(filters Filters, page, pageSize int) string {
+	return fmt.Sprintf("products:category=%s:priceLessThan=%d:page=%d:pageSize=%d",
+		filters.Category, filters.PriceLessThan, page, pageSize)
 }
 
 // applyDiscount applies the discount rules to a product
