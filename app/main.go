@@ -13,7 +13,7 @@ import (
 )
 
 func main() {
-	dsn := "root:password@tcp(db:3306)/promotions_db"
+	dsn := os.Getenv("DATABASE_URL")
 	application, err := services.SetUpApp(dsn)
 	if err != nil {
 		log.Fatal("Failed to set up application:", err)
