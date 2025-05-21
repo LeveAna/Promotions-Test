@@ -7,5 +7,6 @@ on:
 jobs:
   job-1:
     name: Job 1
+    runs-on: ubuntu-latest
     steps: 
       - run: echo script 
