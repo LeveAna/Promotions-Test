@@ -1,0 +1,11 @@
+name: Playground
+on: 
+  push:
+    branches:
+      - master
+
+jobs:
+  job-1:
+    name: Job 1
+    steps: 
+      - run: echo script 
