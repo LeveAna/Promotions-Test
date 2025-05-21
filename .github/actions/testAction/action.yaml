@@ -1,0 +1,15 @@
+name: 'Test Action'
+description: 'Test Action'
+inputs:
+  color:
+    description: 'Color description'
+    default: blue
+    required: true
+outputs:
+  greetings:
+    description: 'Hello'
+runs:
+  using: "composite"
+  steps:
+    - run: echo ${{inputs.color}}
+      shell: bash

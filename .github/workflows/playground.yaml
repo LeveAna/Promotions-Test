@@ -11,4 +11,9 @@ jobs:
     steps: 
       - run: echo script 
       - uses: actions/checkout@v4
-      - run: ls -lachs 
+        with:
+          ref: master
+      - run: ls -lachs
+      - uses: ./.github/actions/testAction
+        with: 
+          color: yellow
